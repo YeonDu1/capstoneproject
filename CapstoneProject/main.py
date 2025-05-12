@@ -30,7 +30,8 @@ class CNNModel(torch.nn.Module):
 @st.cache_resource
 def load_model():
     model = CNNModel()
-    model.load_state_dict(torch.load("sign_language_model.pth", map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load("models/sign_language_model.pth", map_location=torch.device('cpu')))
+
     model.eval()  #Set Evaluation Mode
     return model
 
