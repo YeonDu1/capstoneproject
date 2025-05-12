@@ -5,7 +5,7 @@ from PIL import Image, ImageOps
 import matplotlib.pyplot as plt
 
 
-# 모델 클래스 정의 (이전에 정의한 CNNModel이 필요)
+# Defining Model Class (need the previously defined CNNModel)
 class CNNModel(torch.nn.Module):
     def __init__(self):
         super(CNNModel, self).__init__()
@@ -14,7 +14,7 @@ class CNNModel(torch.nn.Module):
         self.conv3 = torch.nn.Conv2d(64, 128, kernel_size=3, padding=1)
         self.pool = torch.nn.MaxPool2d(2, 2)
         self.fc1 = torch.nn.Linear(128 * 3 * 3, 512)
-        self.fc2 = torch.nn.Linear(512, 26)  # A~Z (총 26개 클래스)
+        self.fc2 = torch.nn.Linear(512, 26)  # A~Z (26 classes in total)
 
     def forward(self, x):
         x = self.pool(torch.relu(self.conv1(x)))
@@ -26,76 +26,75 @@ class CNNModel(torch.nn.Module):
         return x
 
 
-# 모델 불러오기 함수
+#Function to load the model
 @st.cache_resource
 def load_model():
     model = CNNModel()
     model.load_state_dict(torch.load("sign_language_model.pth", map_location=torch.device('cpu')))
-    model.eval()  # 평가 모드 설정
+    model.eval()  #Set Evaluation Mode
     return model
 
 
-# 이미지 전처리 함수
+#Image preprocessing function
 def preprocess_image(image):
-    # 이미지를 시계 방향으로 90도 회전
     #image = image.rotate(-90)
 
-    # 전처리 파이프라인
+    # Preprocesing pipeline
     transform = transforms.Compose([
-        transforms.Grayscale(num_output_channels=1),  # 흑백 변환
-        transforms.Resize((28, 28)),  # 28x28 크기 변경
+        transforms.Grayscale(num_output_channels=1),  # Convert to grayscale
+        transforms.Resize((28, 28)),  # Resize to 28x28
         transforms.ToTensor(),  # 텐서 변환
-        #transforms.Normalize((0.5,), (0.5,))  # 정규화
+        #transforms.Normalize((0.5,), (0.5,))  # Normalization
     ])
 
     processed_image = transform(image)
-    return processed_image.unsqueeze(0)  # 배치 차원 추가 (1, 1, 28, 28)
+    return processed_image.unsqueeze(0)  # Add batch dimension (1, 1, 28, 28)
 
 
-# 예측 함수
+# Prediction function
 def predict(image, model):
     with torch.no_grad():
         output = model(image)
         predicted_label = torch.argmax(output, dim=1).item()
-        return chr(predicted_label + 65)  # 0~25 → A~Z 변환
+        return chr(predicted_label + 65)  # Convert 0~25 → A~Z
 
 
-# Streamlit UI 실행 함수
+# Function to run Streamlit UI
 def run_app():
     st.title("Sign Language Recognition")
     st.write("Drag and drop an image of a sign language letter to classify it.")
 
-    # 이미지 업로드
+    # Image upload
     uploaded_file = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
 
     if uploaded_file is not None:
-        # 원본 이미지 열기
+        # Open original image
         image = Image.open(uploaded_file)
 
-        # 전처리 전 이미지 표시
+        # Display image before preprocessing
         st.image(image, caption="Original Image (Before Preprocessing)", use_container_width=True)
 
-        # 모델 불러오기
+        # Load model
         model = load_model()
 
-        # 이미지 전처리
+        # Preprocess image
         processed_image = preprocess_image(image)
 
-        # 전처리 후 이미지 시각화
-        processed_image_np = processed_image.squeeze().numpy()  # 텐서를 NumPy 배열로 변환
+        # Visualize image after preprocessing
+        processed_image_np = processed_image.squeeze().numpy()  # Convert tensor to NumPy array
 
         fig, ax = plt.subplots(figsize=(3, 3))
         ax.imshow(processed_image_np, cmap="gray")
         ax.axis("off")
         st.pyplot(fig)
 
-        # 예측 실행
+        # Run prediction
         prediction = predict(processed_image, model)
 
-        # 결과 출력
+        # Print result
         st.success(f"Predicted Alphabet: {prediction}")
 
 
-# 실행 진입점
+# Entry point
 if __name__ == "__main__":
     run_app()
