@@ -25,14 +25,19 @@ class CNNModel(torch.nn.Module):
         x = self.fc2(x)
         return x
 
-
+import os
 #Function to load the model
 @st.cache_resource
 def load_model():
     model = CNNModel()
-    model.load_state_dict(torch.load("models/sign_language_model.pth", map_location=torch.device('cpu')))
+    model_path = os.path.join(os.path.dirname(__file__), "sign_language_model.pth")
+    
+    if not os.path.exists(model_path):
+        st.error(f"Model file not found at: {model_path}")
+        st.stop()
 
-    model.eval()  #Set Evaluation Mode
+    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+    model.eval() #Set Evaluation Mode
     return model
 
 
